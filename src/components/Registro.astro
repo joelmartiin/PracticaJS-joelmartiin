@@ -1,0 +1,41 @@
+<form id="formulario-registro">
+    Username <input type="text" id="username" required><br>
+    Email <input type="email" id="email" required><br>
+    <button type="submit" id="boton-registro">Enviar</button>
+</form>
+
+<p id="mensaje"></p>
+
+<script>
+    const form = document.getElementById("formulario-registro") as HTMLFormElement
+    const boton_registro = document.getElementById("boton-registro")
+    const username = document.getElementById("username") as HTMLInputElement
+    const email = document.getElementById("email")as HTMLInputElement
+    const output = document.getElementById("mensaje") as HTMLParagraphElement
+    const URL_BD = import.meta.env.PUBLIC_URL_BD
+
+    form?.addEventListener("submit", async (event) => {
+        event.preventDefault()
+
+        const usernameValor = username?.value.trim()
+        const emailValor = email?.value.trim()
+
+        try {
+
+            const nuevoUser = {
+                name: usernameValor,
+                email: emailValor
+            }
+
+            const respuesta = await fetch(`${URL_BD}.json`, {
+                method: "POST",
+                body: JSON.stringify(nuevoUser)
+            })
+            if (!respuesta.ok) throw new Error(`Error al actualizar: ${respuesta.status}`)
+        } catch(error) {
+            console.error(error)
+            output.textContent = "Ha ocurrido un error. Revisa la consola."
+        }
+        form.reset();
+    })
+</script>
