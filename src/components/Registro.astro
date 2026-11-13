@@ -7,12 +7,16 @@
 <p id="mensaje"></p>
 
 <script>
+
     const form = document.getElementById("formulario-registro") as HTMLFormElement
-    const boton_registro = document.getElementById("boton-registro")
     const username = document.getElementById("username") as HTMLInputElement
     const email = document.getElementById("email")as HTMLInputElement
     const output = document.getElementById("mensaje") as HTMLParagraphElement
     const URL_BD = import.meta.env.PUBLIC_URL_BD
+
+    function estaVacio(obj: any) {
+        return obj && obj.constructor === Object && Object.keys(obj).length === 0;
+    }
 
     form?.addEventListener("submit", async (event) => {
         event.preventDefault()
@@ -22,20 +26,45 @@
 
         try {
 
+            // const res = await fetch(`${URL_BD}.json`)
+            // const data = await res.json()
+
+            // data.find
+
+            const res = await fetch(`${URL_BD}.json?orderBy="email"&equalTo="${emailValor}"`)
+            const data = await res.json()
+            
+
             const nuevoUser = {
                 name: usernameValor,
                 email: emailValor
             }
 
-            const respuesta = await fetch(`${URL_BD}.json`, {
-                method: "POST",
-                body: JSON.stringify(nuevoUser)
-            })
-            if (!respuesta.ok) throw new Error(`Error al actualizar: ${respuesta.status}`)
-        } catch(error) {
-            console.error(error)
-            output.textContent = "Ha ocurrido un error. Revisa la consola."
+            let id: string = " "
+            
+            if (estaVacio(data)){
+                const respuesta = await fetch(`${URL_BD}.json`, {
+                    method: "POST",
+                    body: JSON.stringify(nuevoUser)
+                });
+                const resultado = await respuesta.json()
+                id = resultado.name
+            } else {
+
+                const id = Object.keys(data)[0];
+
+                const res = await fetch(`${URL_BD}/${id}.json`, {
+                    method: "PUT",
+                    body: JSON.stringify(nuevoUser)
+                })
+            }
+            sessionStorage.setItem("user", id)
+
+            form.reset();
         }
-        form.reset();
+        catch(error) {
+            console.log("Error:", error)
+        }
     })
+
 </script>
