@@ -24,41 +24,38 @@
         const emailValor = email?.value.trim()
 
         try {
-            const res = await fetch(`${URL_BD}.json?orderBy="email"&equalTo="${emailValor}"`)
-            const data = await res.json()
-            
+    const res = await fetch(`${URL_BD}/users.json?orderBy="email"&equalTo="${emailValor}"`)
+    const data = await res.json()
 
-            const nuevoUser = {
-                name: usernameValor,
-                email: emailValor
-            }
+    const nuevoUser = {
+        name: usernameValor,
+        email: emailValor
+    }
 
-            let id: string = " "
-            
-            if (estaVacio(data)){
-                const respuesta = await fetch(`${URL_BD}.json`, {
-                    method: "POST",
-                    body: JSON.stringify(nuevoUser)
-                });
-                const resultado = await respuesta.json()
-                id = resultado.name
-            } else {
+    let id: string = " "
 
-                id = Object.keys(data)[0];
+    if (estaVacio(data)) {
+        const respuesta = await fetch(`${URL_BD}/users.json`, {
+            method: "POST",
+            body: JSON.stringify(nuevoUser)
+        })
+        const resultado = await respuesta.json()
+        id = resultado.name
+    } else {
+        id = Object.keys(data)[0]
 
-                await fetch(`${URL_BD}/${id}.json`, {
-                    method: "PUT",
-                    body: JSON.stringify(nuevoUser)
-                })
-            }
-            sessionStorage.setItem("user", id)
-            location.reload()
+        await fetch(`${URL_BD}/users/${id}.json`, {
+            method: "PUT",
+            body: JSON.stringify(nuevoUser)
+        })
+    }
 
-            form.reset();
-        }
-        catch(error) {
-            console.log("Error:", error)
-        }
+    sessionStorage.setItem("user", id)
+    location.reload()
+}
+catch (error) {
+    console.log("Error:", error)
+}
     })
 
 </script>
