@@ -1,32 +1,23 @@
 ---
-import Registro from '../components/Registro.astro';
-import Layout from '../layouts/Layout.astro';
-import Juego from '../components/Juego.astro'
+import Layout from "../layouts/Layout.astro"
+import Registro from "../components/Registro.astro"
+import Juego from "../components/Juego.astro"
 ---
 
 <Layout>
-	<div id="vista-registro">
-		<Registro />
-	</div>
-
-	<div id="vista-juego" hidden>
-		<Juego />
-	</div>
-	
-	<script>
-		const form = document.getElementById('formulario-registro') as HTMLFormElement;
-		const vistaRegistro = document.getElementById('vista-registro')!;
-		const vistaJuego = document.getElementById('vista-juego')!;
-
-		form.addEventListener('submit', (e) => {
-			e.preventDefault();
-
-			const nombre = (document.getElementById('username') as HTMLInputElement).value;
-
-			vistaRegistro.hidden = true;
-			vistaJuego.hidden = false;
-
-			window.dispatchEvent(new CustomEvent('iniciar-juego', { detail: { nombre } }));
-		});
-	</script>
+    <div id="vista-registro" hidden>
+        <Registro />
+    </div>
+    <div id="vista-juego" hidden>
+        <Juego />
+    </div>
 </Layout>
+
+<script>
+    const logueado = sessionStorage.getItem("user")
+    const registro = document.getElementById("vista-registro")
+    const juego = document.getElementById("vista-juego")
+
+    if (registro) registro.hidden = !!logueado
+    if (juego) juego.hidden = !logueado
+</script>

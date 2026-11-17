@@ -44,14 +44,15 @@
                 id = resultado.name
             } else {
 
-                const id = Object.keys(data)[0];
+                id = Object.keys(data)[0];
 
-                const res = await fetch(`${URL_BD}/${id}.json`, {
+                await fetch(`${URL_BD}/${id}.json`, {
                     method: "PUT",
                     body: JSON.stringify(nuevoUser)
                 })
             }
             sessionStorage.setItem("user", id)
+            location.reload()
 
             form.reset();
         }

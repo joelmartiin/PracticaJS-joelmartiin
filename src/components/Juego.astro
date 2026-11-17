@@ -1,28 +1,46 @@
-<main id="game">
-    <h1>Vienvenido al juego</h1>
-    <div>
+---
+import Ranking from "./Ranking.astro"
+---
+
+<div id="game">
+    <section class="left">
+        <h1>Bienvenido al juego</h1>
         <form id="game-form">
-            Numero de cartas(par)<input type="number" id="cards-number">
+            Número de cartas (par)
+            <input type="number" id="cards-number" />
             <button type="submit" id="play-btn">Jugar</button>
         </form>
-        <p id="modal"></p>
+
+        <dialog id="modal">
+            <p id="modal-text"></p>
+            <button type="button" id="modal-close">Cerrar</button>
+        </dialog>
+
         <p id="timer"></p>
-    </div>
-    <div id="game-board" hidden></div>
-</main>
+        <p id="result"></p>
+        <div id="game-board" hidden></div>
+    </section>
+
+    <Ranking />
+
+    <button type="button" id="logout-btn">Cerrar sesión</button>
+</div>
 
 <script>
-
-    const form = document.getElementById("game-form") as HTMLFormElement
-    const input = document.getElementById("cards-number") as HTMLInputElement | null    
-    const output = document.getElementById("modal")
+    const form = document.getElementById("game-form") as HTMLFormElement | null
+    const input = document.getElementById("cards-number") as HTMLInputElement | null
+    const modal = document.getElementById("modal") as HTMLDialogElement | null
+    const modalText = document.getElementById("modal-text") as HTMLParagraphElement | null
+    const modalClose = document.getElementById("modal-close") as HTMLButtonElement | null
+    const result = document.getElementById("result") as HTMLParagraphElement | null
     const playBtn = document.getElementById("play-btn") as HTMLButtonElement | null
     const timer = document.getElementById("timer") as HTMLParagraphElement | null
     const board = document.getElementById("game-board") as HTMLDivElement | null
-
-    let intervalId: number;
+    const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement | null
 
     const MAX_POKEMON = 151
+    let intervalId: number | undefined
+    let seconds = 0
     let firstCard: HTMLElement | null = null
     let lock = false
     let matchedPairs = 0
@@ -30,107 +48,115 @@
     let gameId = 0
     const sprites = new Map<number, string>()
 
-    function startTimer() {
-    if (!timer) return
-    clearInterval(intervalId)
-    let seconds = 0
-    timer.textContent = "0m 0s"
-
-    intervalId = window.setInterval(() => {
-      seconds++
-      timer.textContent = `${Math.floor(seconds / 60)}m ${seconds % 60}s`
-    }, 1000)
-  }
-
-  function mezclar<T>(arr: T[]): T[] {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    function showError(message: string) {
+        if (!modal || !modalText) return
+        modalText.textContent = message
+        modal.showModal()
     }
-    return arr
-  }
+
+    function startTimer() {
+        if (!timer) return
+        clearInterval(intervalId)
+        seconds = 0
+        timer.textContent = "0m 0s"
+
+        intervalId = window.setInterval(() => {
+            seconds++
+            timer.textContent = `${Math.floor(seconds / 60)}m ${seconds % 60}s`
+        }, 1000)
+    }
+
+    function mezclar<T>(arr: T[]): T[] {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            ;[arr[i], arr[j]] = [arr[j], arr[i]]
+        }
+        return arr
+    }
 
     async function getSprite(id: number): Promise<string> {
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
-    const data = await res.json()
-    return data.sprites.front_default
-}
-
-async function buildBoard(n: number): Promise<boolean> {
-    if (!board) return false
-    const currentGame = ++gameId
-
-    board.innerHTML = ""
-    firstCard = null
-    lock = true
-    matchedPairs = 0
-    totalPairs = n / 2
-
-    // n/2 ids aleatorios distintos entre 1 y MAX_POKEMON
-    const pool = mezclar(Array.from({ length: MAX_POKEMON }, (_, i) => i + 1))
-    const ids = pool.slice(0, n / 2)
-
-    try {
-        await Promise.all(
-            ids.map(async (id) => {
-                if (!sprites.has(id)) sprites.set(id, await getSprite(id))
-            })
-        )
-    } catch {
-        if (output) output.textContent = "Error cargando los pokemon"
-        return false
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
+        const data = await res.json()
+        return data.sprites.front_default
     }
 
-    if (currentGame !== gameId) return false   // el usuario reinició mientras cargaba
+    async function buildBoard(n: number): Promise<boolean> {
+        if (!board) return false
+        const currentGame = ++gameId
 
-    mezclar([...ids, ...ids]).forEach((id) => {
-        const card = document.createElement("div")
-        card.className = "card"
-        card.dataset.id = String(id)
-        card.addEventListener("click", () => flipCard(card))
-        board.appendChild(card)
-    })
+        board.innerHTML = ""
+        firstCard = null
+        lock = true
+        matchedPairs = 0
+        totalPairs = n / 2
+        if (result) result.textContent = ""
 
-    board.hidden = false
-    lock = false
-    return true
-}
+        const pool = mezclar(Array.from({ length: MAX_POKEMON }, (_, i) => i + 1))
+        const ids = pool.slice(0, n / 2)
+
+        try {
+            await Promise.all(
+                ids.map(async (id) => {
+                    if (!sprites.has(id)) sprites.set(id, await getSprite(id))
+                })
+            )
+        } catch {
+            showError("Error cargando los pokemon")
+            return false
+        }
+
+        if (currentGame !== gameId) return false
+
+        mezclar([...ids, ...ids]).forEach((id) => {
+            const card = document.createElement("div")
+            card.className = "card"
+            card.dataset.id = String(id)
+            card.addEventListener("click", () => flipCard(card))
+            board.appendChild(card)
+        })
+
+        board.hidden = false
+        lock = false
+        return true
+    }
 
     function flipCard(card: HTMLElement) {
-    if (lock || card.classList.contains("flipped")) return
+        if (lock || card.classList.contains("flipped")) return
 
-    card.classList.add("flipped")
-    card.style.backgroundImage = `url(${sprites.get(Number(card.dataset.id))})`
+        card.classList.add("flipped")
+        card.style.backgroundImage = `url(${sprites.get(Number(card.dataset.id))})`
 
-    if (!firstCard) {
-        firstCard = card
-        return
-    }
-
-    const first = firstCard
-    firstCard = null
-
-    if (first.dataset.id === card.dataset.id) {
-        first.classList.add("matched")
-        card.classList.add("matched")
-        matchedPairs++
-
-        if (matchedPairs === totalPairs) {
-            clearInterval(intervalId)           // para el temporizador
-            if (output) output.textContent = "¡Has ganado!"
+        if (!firstCard) {
+            firstCard = card
+            return
         }
-    } else {
-        lock = true
-        setTimeout(() => {
-            first.classList.remove("flipped")
-            card.classList.remove("flipped")
-            first.style.backgroundImage = ""
-            card.style.backgroundImage = ""
-            lock = false
-        }, 800)
-    }
-}
 
+        const first = firstCard
+        firstCard = null
+
+        if (first.dataset.id === card.dataset.id) {
+            first.classList.add("matched")
+            card.classList.add("matched")
+            matchedPairs++
+
+            if (matchedPairs === totalPairs) {
+                clearInterval(intervalId)
+                if (result) result.textContent = "¡Has ganado!"
+                window.dispatchEvent(new CustomEvent("game-won", {
+                    detail: { seconds, cards: totalPairs * 2 },
+                }))
+            }
+        } else {
+            lock = true
+            setTimeout(() => {
+                first.classList.remove("flipped")
+                card.classList.remove("flipped")
+                first.style.backgroundImage = ""
+                card.style.backgroundImage = ""
+                lock = false
+            }, 800)
+        }
+    }
 
     async function startGame(n: number) {
         if (playBtn) playBtn.textContent = "Volver a jugar"
@@ -141,21 +167,35 @@ async function buildBoard(n: number): Promise<boolean> {
 
     form?.addEventListener("submit", (event) => {
         event.preventDefault()
-        if(!output) return;    
 
         const valor = input?.value.trim() ?? ""
         const numero = Number(valor)
 
-        if(numero % 2 === 0 && numero > 0 && Number.isInteger(numero) && numero <= MAX_POKEMON * 2) {
-            output.textContent = "Numero valido"
-            startGame(numero);
+        if (valor !== "" && Number.isInteger(numero) && numero > 0 && numero % 2 === 0 && numero <= MAX_POKEMON * 2) {
+            startGame(numero)
         } else {
-            output.textContent = "Numero no valido, ingresa otro"
+            showError(`Introduce un número entero, positivo y par (máximo ${MAX_POKEMON * 2})`)
         }
+    })
+
+    modalClose?.addEventListener("click", () => modal?.close())
+
+    logoutBtn?.addEventListener("click", () => {
+        sessionStorage.removeItem("user")
+        location.reload()
     })
 </script>
 
 <style is:global>
+    #game {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        align-items: flex-start;
+    }
+
+    #game .left { flex: 1; }
+
     #game-board {
         display: grid;
         grid-template-columns: repeat(auto-fill, 70px);
@@ -168,20 +208,12 @@ async function buildBoard(n: number): Promise<boolean> {
         height: 100px;
         background: #345;
         border-radius: 6px;
-    }
-
-    .card {
         cursor: pointer;
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center;
     }
 
-    .card.flipped {
-        background-color: #fff;
-    }
-
-    .card.matched {
-        background-color: #4caf50;
-    }
+    .card.flipped { background-color: #fff; }
+    .card.matched { background-color: #4caf50; }
 </style>

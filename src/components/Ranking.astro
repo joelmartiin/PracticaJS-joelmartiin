@@ -1,0 +1,118 @@
+<aside id="ranking">
+  <h2>Ranking</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Posició</th><th>Username</th><th>Mail</th><th>Temps</th><th>Cartes</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</aside>
+
+<script>
+  const DB = import.meta.env.PUBLIC_URL_BD
+
+  type Entry = { id: string; username: string; mail: string; time: number; cards: number }
+  type RankRecord = { userId: string; time: number; cards: number }
+  type UserRecord = { name?: string; email?: string }
+
+  const tbody = document.querySelector("#ranking tbody") as HTMLTableSectionElement | null
+
+  const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`
+
+  const sortEntries = (list: Entry[]) =>
+    [...list].sort((a, b) => b.cards - a.cards || a.time - b.time)
+
+  function dotsRow() {
+    const tr = document.createElement("tr")
+    const td = document.createElement("td")
+    td.colSpan = 5
+    td.textContent = "..."
+    tr.appendChild(td)
+    return tr
+  }
+
+  function entryRow(e: Entry, pos: number, highlight: boolean) {
+    const tr = document.createElement("tr")
+    if (highlight) tr.classList.add("highlight")
+    ;[pos, e.username, e.mail, formatTime(e.time), e.cards].forEach((v) => {
+      const td = document.createElement("td")
+      td.textContent = String(v)
+      tr.appendChild(td)
+    })
+    return tr
+  }
+
+  function render(entries: Entry[], newId?: string) {
+    if (!tbody) return
+    tbody.innerHTML = ""
+    const sorted = sortEntries(entries)
+    const row = (i: number) => entryRow(sorted[i], i + 1, sorted[i].id === newId)
+
+    if (sorted.length <= 5) {
+      sorted.forEach((_, i) => tbody.appendChild(row(i)))
+      return
+    }
+
+    for (let i = 0; i < 4; i++) tbody.appendChild(row(i))
+
+    const idx = newId ? sorted.findIndex((e) => e.id === newId) : -1
+
+    if (idx < 4) {
+      tbody.appendChild(dotsRow())
+      return
+    }
+
+    if (idx > 4) tbody.appendChild(dotsRow())
+    tbody.appendChild(row(idx))
+    if (idx < sorted.length - 1) tbody.appendChild(dotsRow())
+  }
+
+  async function loadRanking(newId?: string) {
+    try {
+      const [rRes, uRes] = await Promise.all([
+        fetch(`${DB}/ranking.json`),
+        fetch(`${DB}/users.json`),
+      ])
+      const ranking: Record<string, RankRecord> = (await rRes.json()) ?? {}
+      const users: Record<string, UserRecord> = (await uRes.json()) ?? {}
+
+      const entries: Entry[] = Object.entries(ranking).map(([id, r]) => ({
+        id,
+        username: users[r.userId]?.name ?? "?",
+        mail: users[r.userId]?.email ?? "?",
+        time: r.time,
+        cards: r.cards,
+      }))
+      render(entries, newId)
+    } catch {
+      console.error("No se pudo cargar el ranking")
+    }
+  }
+
+  window.addEventListener("game-won", async (e) => {
+    const userId = sessionStorage.getItem("user")
+    if (!userId) return
+
+    const { seconds, cards } = (e as CustomEvent).detail
+    try {
+      const res = await fetch(`${DB}/ranking.json`, {
+        method: "POST",
+        body: JSON.stringify({ userId, time: seconds, cards }),
+      })
+      const { name } = await res.json()
+      await loadRanking(name)
+    } catch {
+      console.error("No se pudo guardar la partida")
+    }
+  })
+
+  loadRanking()
+</script>
+
+<style is:global>
+  #ranking table { border-collapse: collapse; }
+  #ranking th, #ranking td { border: 1px solid #ccc; padding: 4px 8px; }
+  #ranking tr.highlight { background-color: yellow; }
+</style>
