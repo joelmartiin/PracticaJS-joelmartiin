@@ -11,7 +11,6 @@
     const form = document.getElementById("formulario-registro") as HTMLFormElement
     const username = document.getElementById("username") as HTMLInputElement
     const email = document.getElementById("email")as HTMLInputElement
-    const output = document.getElementById("mensaje") as HTMLParagraphElement
     const URL_BD = import.meta.env.PUBLIC_URL_BD
 
     function estaVacio(obj: any) {
@@ -25,12 +24,6 @@
         const emailValor = email?.value.trim()
 
         try {
-
-            // const res = await fetch(`${URL_BD}.json`)
-            // const data = await res.json()
-
-            // data.find
-
             const res = await fetch(`${URL_BD}.json?orderBy="email"&equalTo="${emailValor}"`)
             const data = await res.json()
             

@@ -1,3 +1,99 @@
 <main id="game">
     <h1>Vienvenido al juego</h1>
+    <div>
+        <form id="game-form">
+            Numero de cartas(par)<input type="number" id="cards-number">
+            <button type="submit" id="play-btn">Jugar</button>
+        </form>
+        <p id="modal"></p>
+        <p id="timer"></p>
+    </div>
+    <div id="game-board" hidden></div>
 </main>
+
+<script>
+
+    const form = document.getElementById("game-form") as HTMLFormElement
+    const input = document.getElementById("cards-number") as HTMLInputElement | null    
+    const output = document.getElementById("modal")
+    const playBtn = document.getElementById("play-btn") as HTMLButtonElement | null
+    const timer = document.getElementById("timer") as HTMLParagraphElement | null
+    const board = document.getElementById("game-board") as HTMLDivElement | null
+
+    let intervalId: number;
+
+    function startTimer() {
+    if (!timer) return
+    clearInterval(intervalId)
+    let seconds = 0
+    timer.textContent = "0m 0s"
+
+    intervalId = window.setInterval(() => {
+      seconds++
+      timer.textContent = `${Math.floor(seconds / 60)}m ${seconds % 60}s`
+    }, 1000)
+  }
+
+  function mezclar<T>(arr: T[]): T[] {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+    return arr
+  }
+
+  function buildBoard(n: number) {
+    if (!board) return
+    board.innerHTML = ""
+
+    const values: number[] = []
+    for (let i = 1; i <= n / 2; i++) values.push(i, i)
+    mezclar(values)
+
+    values.forEach((value) => {
+      const card = document.createElement("div")
+      card.className = "card"        // girada (boca abajo)
+      card.dataset.value = String(value)
+      board.appendChild(card)
+    })
+
+    board.hidden = false
+  }
+
+
+  function startGame(n: number) {
+    if (playBtn) playBtn.textContent = "Volver a jugar"
+    buildBoard(n)
+    startTimer()
+  }
+
+    form?.addEventListener("submit", (event) => {
+        event.preventDefault()
+        if(!output) return;    
+
+        const valor = input?.value.trim() ?? ""
+        const numero = Number(valor)
+
+        if(numero % 2 === 0 && numero > 0 && Number.isInteger(numero)) {
+            output.textContent = "Numero valido"
+            startGame(numero);
+        } else {
+            output.textContent = "Numero no valido, ingresa otro"
+        }
+    })
+</script>
+
+<style is:global>
+  #game-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 70px);
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .card {
+    width: 70px;
+    height: 100px;
+    background: #345;
+    border-radius: 6px;
+  }
+</style>
