@@ -1,0 +1,61 @@
+<form id="formulario-registro">
+    Username <input type="text" id="username" required><br>
+    Email <input type="email" id="email" required><br>
+    <button type="submit" id="boton-registro">Enviar</button>
+</form>
+
+<p id="mensaje"></p>
+
+<script>
+
+    const form = document.getElementById("formulario-registro") as HTMLFormElement
+    const username = document.getElementById("username") as HTMLInputElement
+    const email = document.getElementById("email")as HTMLInputElement
+    const URL_BD = import.meta.env.PUBLIC_URL_BD
+
+    function estaVacio(obj: any) {
+        return obj && obj.constructor === Object && Object.keys(obj).length === 0;
+    }
+
+    form?.addEventListener("submit", async (event) => {
+        event.preventDefault()
+
+        const usernameValor = username?.value.trim()
+        const emailValor = email?.value.trim()
+
+        try {
+    const res = await fetch(`${URL_BD}/users.json?orderBy="email"&equalTo="${emailValor}"`)
+    const data = await res.json()
+
+    const nuevoUser = {
+        name: usernameValor,
+        email: emailValor
+    }
+
+    let id: string = " "
+
+    if (estaVacio(data)) {
+        const respuesta = await fetch(`${URL_BD}/users.json`, {
+            method: "POST",
+            body: JSON.stringify(nuevoUser)
+        })
+        const resultado = await respuesta.json()
+        id = resultado.name
+    } else {
+        id = Object.keys(data)[0]
+
+        await fetch(`${URL_BD}/users/${id}.json`, {
+            method: "PUT",
+            body: JSON.stringify(nuevoUser)
+        })
+    }
+
+    sessionStorage.setItem("user", id)
+    location.reload()
+}
+catch (error) {
+    console.log("Error:", error)
+}
+    })
+
+</script>
