@@ -13,11 +13,51 @@
 	</body>
 </html>
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
+<style is:global>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+    :root {
+        font-family: 'Nunito', sans-serif;
+        color: #26344a;
+        background: #d9f0ff;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html,
+    body {
+        margin: 0;
+        width: 100%;
+        min-height: 100%;
+    }
+
+    body {
+        min-height: 100vh;
+        padding: 35px 20px;
+        background: lightblue;
+        background-size: 80px 80px, 100px 100px, cover;
+    }
+
+    button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        font-weight: 900;
+        transition: 0.2s ease;
+    }
+
+    button:hover {
+        transform: translateY(-3px);
+        filter: brightness(1.05);
+    }
+
+    input {
+        font-family: inherit;
+    }
+
+    [hidden] {
+        display: none !important;
+    }
 </style>
